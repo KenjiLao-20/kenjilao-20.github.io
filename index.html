@@ -67,21 +67,7 @@
         <input type="number" id="prelim_grade" name="prelim_grade" required placeholder="Enter Prelim Grade"> 
         <button type="submit">Calculate</button>
     </form>  
-    {% if error_message %}
-    <p style="color: red;">{{ error_message }}</p>
-{% endif %}
-{% if prelim_grade_result %}
-    <h2>Result:</h2>
-    <p>{{ prelim_grade_result }}</p>
-    <p>{{ midterm_result }}</p>
-    <p>{{ finals_result }}</p>
-    {% if message %}
-        <p>{{ message }}</p>
-    {% endif %}
-    {% if dean_lister_message %}
-        <p>{{ dean_lister_message }}</p>
-    {% endif %}
-{% endif %}
-<script src="script.py" type="text/pyscript"></script>
+    <div id="result"></div>
+    <script src="script.py" type="text/pyscript"></script>
 </body>
 </html>
