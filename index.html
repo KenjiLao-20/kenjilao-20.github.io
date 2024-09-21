@@ -89,76 +89,61 @@
 <py-script>
     from pyscript import Element
 
-def calculate_required_grades(prelim_grade):
+from pyscript import Element
+
+def reset_result():
+    """Function to reset the result display and error message."""
+    Element("result").element.style.display = "none"  # Hide the result section
+    Element("error").element.innerHTML = ""  # Clear error message
+    Element("prelimGrade").element.innerHTML = ""
+    Element("midtermGrade").element.innerHTML = ""
+    Element("finalGrade").element.innerHTML = ""
+    Element("passMessage").element.innerHTML = ""
+    Element("deansMessage").element.innerHTML = ""
+
+def calculate_grade(event):
+    event.preventDefault()  # Prevent the form from refreshing the page
+    reset_result()  # Reset any previous result when recalculating
+    try:
+        prelim = float(Element("prelim").element.value)
+    except ValueError:
+        Element("error").element.innerHTML = "Please enter a valid prelim grade."
+        return
+
     passing_grade = 75
-    prelim_weight = 0.20
-    midterm_weight = 0.30
-    final_weight = 0.50
-    grade_range = (0, 100)
-    dean_lister_threshold = 90
-    
-#Computation of prelim grade to 20%
-    current_total = prelim_grade * prelim_weight
-#Calculation of grades required for midterm and finals
+    deans_lister_grade = 90
+    prelim_percent = 0.20
+    midterm_percent = 0.30
+    final_percent = 0.50
+    # Validate prelim grade
+    if prelim < 0 or prelim > 100:
+        Element("error").element.innerHTML = "Please enter a valid prelim grade between 0 and 100."
+        return  # Clear error
+    # Calculate required grades
+    current_total = prelim * prelim_percent
     required_total = passing_grade - current_total
-    midterm_final_weight = midterm_weight + final_weight
-#Calculation of average grades required for midterm and finals
-    min_required_average = required_total / midterm_final_weight
-#Calculation of required grades for Dean's Lister
-    required_total_dean_lister = dean_lister_threshold - current_total
-    min_required_average_dean_lister = required_total_dean_lister / midterm_final_weight
-
-#To make sure the grades entered is only between 0 and 100
-    if not (grade_range[0] <= prelim_grade <= grade_range[1]):
-        return "Error: Preliminary grade must be between 0 and 100."
-
-    if min_required_average < grade_range[0]:
-        min_required_average = grade_range[0]
-    
-    if min_required_average_dean_lister < grade_range[0]:
-        min_required_average_dean_lister = grade_range[0]
-
-    if prelim_grade < 70:
-        return ("Prelim Grade: {:.2f}".format(prelim_grade),
-                "Required Grade for Midterm: {:.2f}".format(min_required_average), 
-                "Required Grade for Finals: {:.2f}".format(min_required_average), 
-                "It is Difficult to Pass!", True,
-                "It's impossible for you to be a Dean's Lister." if min_required_average_dean_lister > 100 else 
-                "The Required Grade for you to be a Dean’s Lister is {:.2f} (Midterm) and {:.2f} (Finals).".format(min_required_average_dean_lister, min_required_average_dean_lister))
-
+    if required_total > 0:
+        required_midterm_and_final = required_total / (midterm_percent + final_percent)
+        pass_message = "It is difficult to pass, as the required grades are very high." if required_midterm_and_final > 90 else "You have a chance to pass!"
     else:
-        return ("Prelim Grade: {:.2f}".format(prelim_grade),
-                "Required Grade for Midterm: {:.2f}".format(min_required_average), 
-                "Required Grade for Finals: {:.2f}".format(min_required_average), 
-                "You Have a Chance to Pass!", False,
-                "It's impossible for you to be a Dean's Lister." if min_required_average_dean_lister > 100 else 
-                "The Required Grade for you to be a Dean’s Lister is {:.2f} (Midterm) and {:.2f} (Finals).".format(min_required_average_dean_lister, min_required_average_dean_lister))
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    result = None
-    message = None
-    pass_chance = None
-    dean_lister_message = None
-    prelim_grade_result = None
-    midterm_result = None
-    finals_result = None
-    error_message = None
-    if request.method == 'POST':
-        prelim_grade = request.form['prelim_grade']
-        try:
-            prelim_grade = float(prelim_grade)
-            if not (0 <= prelim_grade <= 100):
-                error_message = "Error: Preliminary grade must be between 0 and 100."
-                result = ("Prelim Grade: {}".format(prelim_grade), error_message, None, None, None)
-            else:
-                result = calculate_required_grades(prelim_grade)
-                if isinstance(result, tuple):
-                    prelim_grade_result, midterm_result, finals_result, message, pass_chance, dean_lister_message = result
-        except ValueError:
-            error_message = "Error: Preliminary grade must be a number."
-            result = ("Prelim Grade: {}".format(prelim_grade), error_message, None, None, None)
-    return render_template('index.html', result=result, message=message, pass_chance=pass_chance, dean_lister_message=dean_lister_message, prelim_grade_result=prelim_grade_result, midterm_result=midterm_result, finals_result=finals_result, error_message=error_message)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        required_midterm_and_final = 0
+        pass_message = "Your current grade is high enough to pass!"
+    # Calculate for Dean's Lister
+    if prelim >= deans_lister_grade:
+        deans_message = "You already qualify for Dean's Lister based on your Prelim grade!"
+    else:
+        required_deans_total = deans_lister_grade - current_total
+        required_deans_midfinal = required_deans_total / (midterm_percent + final_percent)
+        if required_deans_midfinal > 100:
+            deans_message = "The required grade is above 100%."
+        else:
+            deans_message = f"The required grade for you to be a Dean's Lister is {required_deans_midfinal:.2f}% (midterm) and {required_deans_midfinal:.2f}% (finals)."
+    # Update result display
+    Element("prelimGrade").element.innerHTML = f" {prelim:.2f}%"
+    Element("midtermGrade").element.innerHTML = f" {required_midterm_and_final:.2f}%"
+    Element("finalGrade").element.innerHTML = f" {required_midterm_and_final:.2f}%"
+    Element("passMessage").element.innerHTML = pass_message
+    Element("deansMessage").element.innerHTML = deans_message
+    # Show result section
+    Element("result").element.style.display = "block"
+    Element("calculateBtn").element.onclick = calculate_grade
